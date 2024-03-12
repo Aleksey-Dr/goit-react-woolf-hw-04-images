@@ -17,7 +17,6 @@ export const App = () => {
     const [largeImage, setLargeImage] = useState('');
     const [term, setTerm] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [pageNum, setPageNum] = useState(1);
     const [showPageEnd, setShowPageEnd] = useState(false);
@@ -46,16 +45,14 @@ export const App = () => {
                     setShowPageEnd(pageNum < Math.ceil(gallery.totalHits / 12));
                 });
             } catch (error) {
-                setError(true);
                 Notiflix.Notify.failure(
                     'Oops... Something went wrong please try again!'
                 );
-                console.log(error);
             } finally {
                 setIsLoading(false);
             }
         }
-    }, [term, pageNum, error, showPageEnd]);
+    }, [term, pageNum]);
 
     // ================== LOGIC
     const handleSearcbarSubmit = term => {
