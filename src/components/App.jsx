@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Notiflix from 'notiflix';
 
 import Searchbar from 'components/Searchbar';
@@ -7,23 +7,23 @@ import Button from 'components/Button';
 import Loader from 'components/Loader';
 import Modal from 'components/Modal';
 
-import { fetchImages } from '../services/pixabay-api';
+import { fetchImages } from 'services/pixabay-api';
 
 import css from './App.module.scss';
 
-export class App extends Component {
-    state = {
-        images: [],
-        largeImage: '',
-        term: '',
-        isLoading: false,
-        error: false,
-        showModal: false,
-        pageNum: 1,
-    };
+export const App = () => {
+    // ================== STATE
+    const [images, setImages] = useState([]);
+    const [largeImage, setLargeImage] = useState('');
+    const [term, setTerm] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(false);
+    const [showModal, setShowModal] = useState(false);
+    const [pageNum, setPageNum] = useState(1);
+    const [showPageEnd, setShowPageEnd] = useState(false);
+    // ================== /STATE
 
-    // ================== COMPONENT LIFECYCLE
-    componentDidUpdate(_, prevState) {
+    useEffect(() => {
         Notiflix.Notify.init({
             width: '300px',
             timeout: 4000,
@@ -32,77 +32,60 @@ export class App extends Component {
                 textColor: '#3f51b5',
             },
         });
-
-        if (
-            prevState.term !== this.state.term ||
-            prevState.pageNum !== this.state.pageNum
-        ) {
+        if (term !== '') {
             try {
-                this.setState({ isLoading: true });
-                fetchImages(this.state.term, this.state.pageNum).then(
-                    gallery => {
-                        if (gallery.length === 0) {
-                            Notiflix.Notify.warning(
-                                'Nothing found for your request'
-                            );
-                            this.setState({ isLoading: false });
-                        } else {
-                            this.setState(prevState => ({
-                                images: [...prevState.images, ...gallery],
-                                isLoading: false,
-                            }));
-                        }
+                setIsLoading(true);
+                fetchImages(term, pageNum).then(gallery => {
+                    if (gallery.hits.length === 0) {
+                        Notiflix.Notify.warning(
+                            'Nothing found for your request'
+                        );
+                        return;
                     }
-                );
+                    setImages(prevState => [...prevState, ...gallery.hits]);
+                    setShowPageEnd(pageNum < Math.ceil(gallery.totalHits / 12));
+                });
             } catch (error) {
-                this.setState({ error: true, isLoading: false });
+                setError(true);
                 Notiflix.Notify.failure(
                     'Oops... Something went wrong please try again!'
                 );
                 console.log(error);
+            } finally {
+                setIsLoading(false);
             }
         }
-    }
-    // ================== /COMPONENT LIFECYCLE
+    }, [term, pageNum, error, showPageEnd]);
 
     // ================== LOGIC
-    handleSearcbarSubmit = term => {
-        this.setState({
-            term,
-            images: [],
-            pageNum: 1,
-        });
+    const handleSearcbarSubmit = term => {
+        setTerm(term);
+        setImages([]);
+        setPageNum(1);
+        setShowPageEnd(false);
     };
 
-    toggleModal = largeImage => {
-        this.setState({
-            showModal: !this.state.showModal,
-            largeImage,
-        });
+    const toggleModal = largeImage => {
+        setShowModal(!showModal);
+        setLargeImage(largeImage);
     };
 
-    onLoadMore = () => {
-        this.setState(prevState => ({ pageNum: prevState.pageNum + 1 }));
-    };
+    const onLoadMore = () => setPageNum(pageNum + 1);
     // ================== /LOGIC
 
-    render() {
-        const { images, largeImage, showModal, isLoading } = this.state;
+    return (
+        <div className={css.app}>
+            <Searchbar onSubmit={handleSearcbarSubmit} />
+            {images.length !== 0 && (
+                <ImageGallery items={images} openModal={toggleModal} />
+            )}
+            {isLoading && <Loader />}
 
-        return (
-            <div className={css.app}>
-                <Searchbar onSubmit={this.handleSearcbarSubmit} />
-                {images.length !== 0 &&
-                  <ImageGallery items={images} openModal={this.toggleModal} />
-                }
-                {isLoading && <Loader />}
+            {showPageEnd && <Button onClick={onLoadMore} />}
 
-                {images.length > 11 && <Button onClick={this.onLoadMore} />}
-
-                {showModal && (
-                    <Modal onClose={this.toggleModal} largeImage={largeImage} />
-                )}
-            </div>
-        );
-    };
+            {showModal && (
+                <Modal onClose={toggleModal} largeImage={largeImage} />
+            )}
+        </div>
+    );
 };

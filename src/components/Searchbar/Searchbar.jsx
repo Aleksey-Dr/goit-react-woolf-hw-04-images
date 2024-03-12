@@ -1,55 +1,49 @@
-import { Component } from 'react';
-import { IoSearchOutline } from "react-icons/io5";
+import { useState } from 'react';
+import { IoSearchOutline } from 'react-icons/io5';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
 import css from './Searchbar.module.scss';
 
-class Searchbar extends Component {
-    state = {
-        term: '',
-    };
+const Searchbar = ({ onSubmit }) => {
+    // ================== STATE
+    const [term, setTerm] = useState('');
+    // ================== /STATE
 
     // ================== LOGIC
-    handleTermChange = event => {
-        this.setState({
-          term: event.target.value.toLowerCase(),
-        });
-    };
-    
-    handleSubmit = event => {
-        event.preventDefault();
-    
-        if (this.state.term.trim() === '') {
-          Notify.warning('Empty string');
-          return;
+    const handleTermChange = evt => setTerm(evt.target.value.toLowerCase());
+
+    const handleSubmit = evt => {
+        evt.preventDefault();
+
+        if (term.trim() === '') {
+            Notify.warning('Empty string');
+            return;
         }
-        this.props.onSubmit(this.state.term);
-        this.setState({
-          term: '',
-        });
+        onSubmit(term);
+        setTerm('');
     };
     // ================== /LOGIC
 
-    render() {
-        return (
-            <header className={css.searchbar}>
-                <form onSubmit={this.handleSubmit} className={css.form}>
-                    <button type="submit" className={css.button}>
-                        <span className={css["button-label"]}><IoSearchOutline size={'2em'} /></span>
-                    </button>
-                    <input
-                        onChange={this.handleTermChange}
-                        value={this.state.term}
-                        type="text"
-                        autoComplete="off"
-                        autoFocus
-                        placeholder="Search images and photos"
-                        className={css.input}
-                    />
-                </form>
-            </header>
-        );
-    };
+    return (
+        <header className={css.searchbar}>
+            <form onSubmit={handleSubmit} className={css.form}>
+                <button type="submit" className={css.button}>
+                    <span className={css['button-label']}>
+                        <IoSearchOutline size={'2em'} />
+                    </span>
+                </button>
+                <input
+                    onChange={handleTermChange}
+                    value={term}
+                    type="text"
+                    autoComplete="off"
+                    autoFocus
+                    placeholder="Search images and photos"
+                    className={css.input}
+                />
+            </form>
+        </header>
+    );
 };
 
 export default Searchbar;
